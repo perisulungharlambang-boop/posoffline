@@ -1,87 +1,86 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * Sync Service - No-op untuk Offline Only mode
- * Semua sinkronisasi cloud dinonaktifkan.
- */
+import { openDB } from 'idb';
 
-export type TableName = 'products' | 'customers' | 'suppliers' | 'transactions' | 'restocks' | 'returs';
+// 1. Ambil URL Google Script dari Environment Variable Vercel yang tadi diisi
+const API_URL = import.meta.env.VITE_API_URL;
 
-export interface SyncResult {
-  table: TableName;
-  total: number;
-  successful: number;
-  failed: number;
-  errors: Array<{ id: string; error: string }>;
-}
-
-export interface SyncStats {
-  isOnline: boolean;
-  isSyncing: boolean;
-  pendingItems: number;
-  lastSyncTime?: number;
-  results?: SyncResult[];
-}
-
-/**
- * Sync Service - Tidak melakukan sinkronisasi apapun (Offline Only)
- */
-class SyncService {
-  private isSyncing = false;
-  private lastSyncTime: number | null = null;
-  private syncListeners: Set<(stats: SyncStats) => void> = new Set();
-
-  subscribe(callback: (stats: SyncStats) => void): () => void {
-    this.syncListeners.add(callback);
-    return () => this.syncListeners.delete(callback);
-  }
-
-  private async broadcastStats() {
-    const stats = await this.getSyncStats();
-    this.syncListeners.forEach((callback) => {
-      try {
-        callback(stats);
-      } catch (error) {
-        console.error('Error in sync listener:', error);
+// 2. Buat koneksi ke Database Lokal (IndexedDB)
+export async function hubungkanDbLokal() {
+  return openDB('toko_ceria_db', 1, {
+    upgrade(db) {
+      // Membuat tabel 'products' di lokal jika belum ada
+      if (!db.objectStoreNames.contains('products')) {
+        db.createObjectStore('products', { keyPath: 'id' });
       }
-    });
-  }
+      // Membuat tabel 'transaksi' di lokal beserta index untuk antrean sync
+      if (!db.objectStoreNames.contains('transaksi')) {
+        const transaksiStore = db.createObjectStore('transaksi', { keyPath: 'id_transaksi' });
+        transaksiStore.createIndex('by-status', 'status_sync');
+      }
+    },
+  });
+}
 
-  async getSyncStats(): Promise<SyncStats> {
-    return {
-      isOnline: false,
-      isSyncing: this.isSyncing,
-      pendingItems: 0,
-      lastSyncTime: this.lastSyncTime || undefined,
-    };
-  }
-
-  async sync(): Promise<SyncResult[]> {
-    console.log('ℹ️ Sync dinonaktifkan (Offline Only mode)');
-    return [];
-  }
-
-  async syncNow(): Promise<SyncResult[]> {
-    return this.sync();
-  }
-
-  async syncTableOnly(table: TableName): Promise<SyncResult> {
-    console.log(`ℹ️ Sync table ${table} dinonaktifkan (Offline Only mode)`);
-    return { table, total: 0, successful: 0, failed: 0, errors: [] };
-  }
-
-  async pullFromSupabase(table: TableName) {
-    console.log(`ℹ️ Pull ${table} dari server dinonaktifkan (Offline Only mode)`);
-  }
-
-  async clearPendingSyncs() {
-    this.broadcastStats();
-  }
-
-  destroy() {
-    this.syncListeners.clear();
+// 3. Fungsi untuk Download data dari Google Sheets ke Laptop/HP (Aplikasi dibuka)
+export async function downloadProdukKeLokal() {
+  try {
+    const response = await fetch(`${API_URL}?table=products`);
+    if (!response.ok) throw new Error('Gagal mengambil data');
+    
+    const produkDariServer = await response.json();
+    const db = await hubungkanDbLokal();
+    
+    // Simpan semua produk ke database lokal (IndexedDB)
+    const tx = db.transaction('products', 'readwrite');
+    for (const produk of produkDariServer) {
+      await tx.store.put(produk);
+    }
+    await tx.done;
+    console.log('✅ Data produk di lokal berhasil diperbarui!');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Gagal download produk (Mode Offline aktif):', error);
+    return { success: false, error };
   }
 }
 
-// Export singleton instance
-export const syncService = new SyncService();
+// 4. Fungsi untuk Upload data transaksi offline ke Google Sheets
+export async function kirimTransaksiOffline() {
+  try {
+    const db = await hubungkanDbLokal();
+    // Cari transaksi yang status_sync nya masih 'pending'
+    const antreanOffline = await db.getAllFromIndex('transaksi', 'by-status', 'pending');
+    
+    if (antreanOffline.length === 0) return; // Keluar jika tidak ada antrean
+
+    // Kirim massal ke Google Sheets
+    const response = await fetch(`${API_URL}?table=transaksi`, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(antreanOffline),
+    });
+
+    const hasil = await response.json();
+
+    if (hasil.status === 'success') {
+      // Jika sukses, ubah status di lokal menjadi 'success' agar tidak dikirim lagi
+      const tx = db.transaction('transaksi', 'readwrite');
+      for (const transaksi of antreanOffline) {
+        transaksi.status_sync = 'success';
+        await tx.store.put(transaksi);
+      }
+      await tx.done;
+      console.log('🚀 Antrean offline berhasil disinkronkan ke Google Sheets!');
+    }
+  } catch (error) {
+    console.error('❌ Gagal sinkronisasi otomatis:', error);
+  }
+}
+
+// 5. Otomatis kirim data begitu komputer mendeteksi ada Sinyal Internet (Online)
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => {
+    console.log('🌐 Internet tersambung! Menyinkronkan data...');
+    kirimTransaksiOffline();
+  });
+}
