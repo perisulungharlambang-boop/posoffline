@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
-// Mock helper untuk classname jika tidak ada library eksternal
+// Helper classname jika dibutuhkan
 const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
 
-// Mock indexdbUser untuk mencegah error jika import bermasalah
+// Mock indexdbUser sederhana untuk mencegah error compile pada types
 const indexdbUser = {
   getAllUsers: async () => {
     const data = localStorage.getItem('pos_users');
@@ -37,7 +37,6 @@ const indexdbUser = {
 };
 
 const SettingsPage: React.FC = () => {
-  // State Toko / Nota
   const [localStoreInfo, setLocalStoreInfo] = useState({
     name: 'Toko Ceria',
     address: 'Jl. Setia Makmur',
@@ -46,12 +45,10 @@ const SettingsPage: React.FC = () => {
   });
   const [isSavingInfo, setIsSavingInfo] = useState(false);
 
-  // State Printer
   const [localPrinter, setLocalPrinter] = useState({
     paperWidthMm: 58
   });
 
-  // State Manajemen Pengguna
   const [users, setUsers] = useState<any[]>([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUsername, setNewUsername] = useState('');
@@ -60,7 +57,6 @@ const SettingsPage: React.FC = () => {
   const [newRole, setNewRole] = useState<'admin' | 'kasir' | 'gudang'>('kasir');
   const [userLoadingId, setUserLoadingId] = useState<string | null>(null);
 
-  // Load data user dari DB lokal saat halaman dibuka
   useEffect(() => {
     loadAllUsers();
   }, []);
@@ -70,7 +66,7 @@ const SettingsPage: React.FC = () => {
       const allUsers = await indexdbUser.getAllUsers();
       setUsers(allUsers || []);
     } catch (err) {
-      console.error('Gagal memuat user:', err);
+      console.error(err);
     }
   };
 
@@ -84,7 +80,7 @@ const SettingsPage: React.FC = () => {
 
   const handleCreateUser = async () => {
     if (!newUsername.trim() || !newName.trim() || !newPassword.trim()) {
-      alert('Semua kolom registrasi wajib diisi!');
+      alert('Semua kolom wajib diisi!');
       return;
     }
     setUserLoadingId('new_user_action');
@@ -122,7 +118,7 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleDeleteUser = async (user: any) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus akun ${user.username}?`)) return;
+    if (!confirm(`Hapus akun ${user.username}?`)) return;
     setUserLoadingId(user.id);
     try {
       await indexdbUser.deleteUser(user.id);
@@ -138,7 +134,7 @@ const SettingsPage: React.FC = () => {
     <div className="p-6 max-w-7xl mx-auto space-y-8 bg-slate-50 min-h-screen">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         
-        {/* Pengaturan Nota / Toko */}
+        {/* Pengaturan Nota */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
           <h3 className="font-black text-xl text-slate-800 tracking-tight">Informasi Nota Belanja</h3>
           <div className="space-y-4">
@@ -243,7 +239,7 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ✅ PENGATURAN SELURUH AKUN / MANAJEMEN PENGGUNA */}
+        {/* ✅ MANAJEMEN PENGGUNA */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6 md:col-span-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -265,7 +261,6 @@ const SettingsPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Form Tambah User Baru */}
           {showAddUser && (
             <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-4">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Form Registrasi Pengguna Baru</p>
@@ -329,7 +324,6 @@ const SettingsPage: React.FC = () => {
             </div>
           )}
 
-          {/* Grid List User */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
             {users.map((u) => {
               const isCurrentUser = indexdbUser.getCurrentUser()?.id === u.id;
@@ -352,7 +346,6 @@ const SettingsPage: React.FC = () => {
   );
 };
 
-// Helper Component untuk List Akun
 interface UserCardProps {
   user: any;
   onSave: (user: any, name: string, password: string) => Promise<void>;
@@ -420,7 +413,6 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, onDelete, isCurrentUs
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full bg-white border border-slate-200 p-3.5 rounded-2xl font-bold text-slate-700 text-xs focus:border-indigo-600 outline-none transition-all"
-            placeholder="Edit nama lengkap..."
           />
         </div>
         <div className="space-y-1">
@@ -431,12 +423,11 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, onDelete, isCurrentUs
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-white border border-slate-200 p-3.5 pr-14 rounded-2xl font-bold text-slate-700 text-xs focus:border-indigo-600 outline-none transition-all"
-              placeholder="Edit password..."
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 focus:outline-none"
+              className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black uppercase tracking-widest text-slate-400"
             >
               {showPassword ? "Tutup" : "Lihat"}
             </button>
@@ -449,12 +440,12 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, onDelete, isCurrentUs
           type="button"
           onClick={() => onSave(user, name, password)}
           disabled={isLoading || !name.trim() || !password.trim()}
-          className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-md shadow-indigo-50"
+          className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all disabled:opacity-50 active:scale-95 flex items-center justify-center gap-2 shadow-md shadow-indigo-50"
         >
           {isLoading ? (
             <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
           )}
           SIMPAN
         </button>
@@ -465,9 +456,8 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, onDelete, isCurrentUs
             onClick={() => onDelete(user)}
             disabled={isLoading}
             className="px-4 py-3 bg-red-50 hover:bg-red-100 text-red-500 rounded-2xl font-black text-xs uppercase transition-all flex items-center justify-center"
-            title="Hapus Akun"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
           </button>
         )}
       </div>
@@ -476,4 +466,3 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, onDelete, isCurrentUs
 };
 
 export default SettingsPage;
-
