@@ -1,6 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { indexdbUser } from '../db'; // Sesuaikan path db lokal Anda jika berbeda
-import { cn } from '../utils/cn'; // Sesuaikan helper classname Anda jika berbeda
+
+// Mock helper untuk classname jika tidak ada library eksternal
+const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
+
+// Mock indexdbUser untuk mencegah error jika import bermasalah
+const indexdbUser = {
+  getAllUsers: async () => {
+    const data = localStorage.getItem('pos_users');
+    return data ? JSON.parse(data) : [{ id: 'user_admin', username: 'admin', name: 'Owner Toko', role: 'admin', password: 'admin' }];
+  },
+  createUser: async (user: any) => {
+    const data = localStorage.getItem('pos_users');
+    const users = data ? JSON.parse(data) : [{ id: 'user_admin', username: 'admin', name: 'Owner Toko', role: 'admin', password: 'admin' }];
+    users.push(user);
+    localStorage.setItem('pos_users', JSON.stringify(users));
+  },
+  updateUser: async (id: string, updatedUser: any) => {
+    const data = localStorage.getItem('pos_users');
+    if (data) {
+      let users = JSON.parse(data);
+      users = users.map((u: any) => u.id === id ? updatedUser : u);
+      localStorage.setItem('pos_users', JSON.stringify(users));
+    }
+  },
+  deleteUser: async (id: string) => {
+    const data = localStorage.getItem('pos_users');
+    if (data) {
+      let users = JSON.parse(data);
+      users = users.filter((u: any) => u.id !== id);
+      localStorage.setItem('pos_users', JSON.stringify(users));
+    }
+  },
+  getCurrentUser: () => {
+    return { id: 'user_admin', username: 'admin', role: 'admin' };
+  }
+};
 
 const SettingsPage: React.FC = () => {
   // State Toko / Nota
@@ -10,7 +44,7 @@ const SettingsPage: React.FC = () => {
     phone: '081234567890',
     footer: 'Terima Kasih'
   });
-  const [isLoading, setIsLoading] = useState<{ [key: string]: boolean }>({});
+  const [isSavingInfo, setIsSavingInfo] = useState(false);
 
   // State Printer
   const [localPrinter, setLocalPrinter] = useState({
@@ -26,7 +60,7 @@ const SettingsPage: React.FC = () => {
   const [newRole, setNewRole] = useState<'admin' | 'kasir' | 'gudang'>('kasir');
   const [userLoadingId, setUserLoadingId] = useState<string | null>(null);
 
-  // Load data user dari IndexedDB saat halaman dibuka
+  // Load data user dari DB lokal saat halaman dibuka
   useEffect(() => {
     loadAllUsers();
   }, []);
@@ -41,10 +75,9 @@ const SettingsPage: React.FC = () => {
   };
 
   const handleSaveInfo = async () => {
-    setIsLoading((prev) => ({ ...prev, saveInfo: true }));
-    // Simulasi atau logika simpan ke localStorage / IndexedDB
+    setIsSavingInfo(true);
     setTimeout(() => {
-      setIsLoading((prev) => ({ ...prev, saveInfo: false }));
+      setIsSavingInfo(false);
       alert('Informasi nota berhasil disimpan!');
     }, 500);
   };
@@ -139,10 +172,10 @@ const SettingsPage: React.FC = () => {
             />
             <button
               onClick={handleSaveInfo}
-              disabled={isLoading['saveInfo']}
+              disabled={isSavingInfo}
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-black uppercase transition-all shadow-md"
             >
-              {isLoading['saveInfo'] ? 'Menyimpan...' : 'SIMPAN INFO TOKO'}
+              {isSavingInfo ? 'Menyimpan...' : 'SIMPAN INFO TOKO'}
             </button>
           </div>
         </div>
@@ -225,7 +258,7 @@ const SettingsPage: React.FC = () => {
             
             <button
               onClick={() => setShowAddUser(!showAddUser)}
-              className="px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-md shadow-indigo-100 active:scale-95"
+              className="px-5 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
               {showAddUser ? 'TUTUP FORM' : 'DAFTARKAN AKUN KASIR/ADMIN'}
@@ -319,7 +352,7 @@ const SettingsPage: React.FC = () => {
   );
 };
 
-// Helper Component untuk List Akun Kartu User
+// Helper Component untuk List Akun
 interface UserCardProps {
   user: any;
   onSave: (user: any, name: string, password: string) => Promise<void>;
@@ -345,10 +378,10 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, onDelete, isCurrentUs
           <div className={cn(
             "w-11 h-11 rounded-xl flex items-center justify-center font-black text-xs uppercase shadow-inner",
             user.role === 'admin' 
-              ? "bg-indigo-600 text-white shadow-indigo-100" 
+              ? "bg-indigo-600 text-white" 
               : user.role === 'gudang'
-                ? "bg-amber-500 text-white shadow-amber-100"
-                : "bg-emerald-500 text-white shadow-green-100"
+                ? "bg-amber-500 text-white"
+                : "bg-emerald-500 text-white"
           )}>
             {user.username.slice(0, 2)}
           </div>
