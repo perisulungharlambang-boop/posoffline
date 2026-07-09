@@ -890,6 +890,23 @@ const SettingsPage: React.FC = () => {
                     onClick={() => setLocalPrinter((p) => ({ ...p, paperWidthMm: 80 }))}
                     className={cn(
                       'py-3 rounded-2xl font-black text-xs uppercase tracking-widest border transition-all',
+                              <button
+          type="button"
+          onClick={() => setLocalPrinter((p) => ({ ...p, paperWidthMm: 80 }))}
+          className={cn(
+            'py-3 rounded-2xl font-black text-xs uppercase tracking-widest border transition-all',
+            localPrinter.paperWidthMm === 80
+              ? 'bg-slate-900 text-white border-slate-900'
+              : 'bg-white text-slate-700 border-slate-200 hover:border-emerald-400'
+          )}
+        >
+          80mm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
         {/* ✅ PENGATURAN SELURUH AKUN / MANAJEMEN PENGGUNA */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6 md:col-span-2">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1123,4 +1140,3 @@ const UserCard: React.FC<UserCardProps> = ({ user, onSave, onDelete, isCurrentUs
 };
 
 export default SettingsPage;
-
