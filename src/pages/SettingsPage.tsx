@@ -238,6 +238,50 @@ const SettingsPage: React.FC = () => {
             </div>
           </div>
         </div>
+        {/* 🗄️ PENGATURAN DATABASE */}
+        <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6 md:col-span-2">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600 shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 0 1 9-9 9 9 0 0 1 9 9c0 4.97-4.03 9-9 9A9 9 0 0 1 3 12z"/><path d="M12 22V12H2"/></svg>
+            </div>
+            <div>
+              <h3 className="font-black text-xl text-slate-800 tracking-tight">Manajemen Database & Sinkronisasi</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sinkronisasi Lokal (IndexedDB) dengan Cloud Supabase</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Tombol Sinkronisasi Cloud */}
+            <button
+              type="button"
+              onClick={() => {
+                alert('Memulai sinkronisasi data ke Supabase...');
+                // Di sini panggil fungsi sync data Mas Ferry (misal: syncIndexedDBWithSupabase())
+              }}
+              className="p-5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-3 shadow-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              SINKRONISASI KE SUPABASE
+            </button>
+
+            {/* Tombol Reset Data Lokal */}
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('PERINGATAN! Semua data lokal di aplikasi ini akan dihapus permanen. Anda yakin?')) {
+                  localStorage.clear();
+                  // Jika menggunakan IndexedDB asli, panggil fungsi hapus store di sini
+                  alert('Data lokal berhasil dibersihkan! Aplikasi akan dimuat ulang.');
+                  window.location.reload();
+                }
+              }}
+              className="p-5 bg-red-50 hover:bg-red-100 text-red-600 rounded-2xl font-black text-xs uppercase tracking-wider transition-all border border-red-200 flex items-center justify-center gap-3"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              WIPE / RESET DATA LOKAL
+            </button>
+          </div>
+        </div>
 
         {/* ✅ MANAJEMEN PENGGUNA */}
         <div className="bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6 md:col-span-2">
